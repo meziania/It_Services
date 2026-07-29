@@ -4,7 +4,14 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, RotateCcw } from "lucide-react";
 import type { Offer, OfferStatus } from "@/lib/types";
-import { PlatformBadge, CategoryBadge, StatusBadge, OfferTypeBadge, ScoreBadge } from "@/components/ui/domain-badges";
+import {
+  PlatformBadge,
+  CategoryBadge,
+  StatusBadge,
+  OfferTypeBadge,
+  ScoreBadge,
+  ContactIndicator,
+} from "@/components/ui/domain-badges";
 import { Card } from "@/components/ui/card";
 import { formatDate } from "@/lib/format";
 
@@ -28,6 +35,7 @@ export function OpportunitiesExplorer({ offers }: { offers: Offer[] }) {
   const [status, setStatus] = useState<OfferStatus | "ALL">("ALL");
   const [remote, setRemote] = useState("ALL");
   const [minScore, setMinScore] = useState(0);
+  const [contactOnly, setContactOnly] = useState(false);
 
   const platforms = useMemo(() => Array.from(new Set(offers.map((o) => o.platform))), [offers]);
   const categories = useMemo(() => Array.from(new Set(offers.map((o) => o.itCategory))), [offers]);
@@ -40,6 +48,7 @@ export function OpportunitiesExplorer({ offers }: { offers: Offer[] }) {
     if (remote === "REMOTE" && !o.remote) return false;
     if (remote === "ONSITE" && o.remote) return false;
     if (o.matchScore < minScore) return false;
+    if (contactOnly && (o.contacts?.length ?? 0) === 0) return false;
     return true;
   });
 
@@ -50,6 +59,7 @@ export function OpportunitiesExplorer({ offers }: { offers: Offer[] }) {
     setStatus("ALL");
     setRemote("ALL");
     setMinScore(0);
+    setContactOnly(false);
   }
 
   return (
@@ -113,6 +123,16 @@ export function OpportunitiesExplorer({ offers }: { offers: Offer[] }) {
           />
         </label>
 
+        <label className="flex items-center gap-1.5 text-xs text-slate-400">
+          <input
+            type="checkbox"
+            checked={contactOnly}
+            onChange={(e) => setContactOnly(e.target.checked)}
+            className="h-3.5 w-3.5 accent-teal-500"
+          />
+          Avec contact uniquement
+        </label>
+
         <button
           onClick={reset}
           className="flex items-center gap-1.5 rounded-lg border border-slate-800 px-3 py-2 text-xs font-medium text-slate-400 hover:border-slate-700 hover:text-slate-200"
@@ -131,6 +151,7 @@ export function OpportunitiesExplorer({ offers }: { offers: Offer[] }) {
               <th className="px-4 py-3 font-medium">Plateforme</th>
               <th className="px-4 py-3 font-medium">Catégorie</th>
               <th className="px-4 py-3 font-medium">Score</th>
+              <th className="px-4 py-3 font-medium">Contact</th>
               <th className="px-4 py-3 font-medium">Type</th>
               <th className="px-4 py-3 font-medium">Statut</th>
               <th className="px-4 py-3 font-medium">Lieu</th>
@@ -159,6 +180,9 @@ export function OpportunitiesExplorer({ offers }: { offers: Offer[] }) {
                   <ScoreBadge score={offer.matchScore} />
                 </td>
                 <td className="px-4 py-3">
+                  <ContactIndicator contacts={offer.contacts} />
+                </td>
+                <td className="px-4 py-3">
                   <OfferTypeBadge offerType={offer.offerType} />
                 </td>
                 <td className="px-4 py-3">
@@ -172,7 +196,7 @@ export function OpportunitiesExplorer({ offers }: { offers: Offer[] }) {
             ))}
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-5 py-10 text-center text-slate-500">
+                <td colSpan={10} className="px-5 py-10 text-center text-slate-500">
                   Aucune offre ne correspond à ces filtres.
                 </td>
               </tr>

@@ -1,5 +1,6 @@
+import { Mail, Phone, MessageCircle } from "lucide-react";
 import { Badge, type BadgeColor } from "./badge";
-import type { ItCategory, OfferStatus, OfferType, Platform } from "@/lib/types";
+import type { ItCategory, OfferContact, OfferStatus, OfferType, Platform } from "@/lib/types";
 
 const PLATFORM_META: Record<Platform, { label: string; color: BadgeColor }> = {
   REKRUTE: { label: "ReKrute", color: "blue" },
@@ -61,6 +62,25 @@ const OFFER_TYPE_LABEL: Record<OfferType, string> = {
 
 export function OfferTypeBadge({ offerType }: { offerType: OfferType }) {
   return <Badge color="slate">{OFFER_TYPE_LABEL[offerType] ?? offerType}</Badge>;
+}
+
+/** Docs2/16 "Trouve les contacts publics" — quick glance icons for the list view. */
+export function ContactIndicator({ contacts }: { contacts?: OfferContact[] | null }) {
+  if (!contacts || contacts.length === 0) {
+    return <span className="text-xs text-slate-600">—</span>;
+  }
+
+  const hasEmail = contacts.some((c) => c.type === "EMAIL");
+  const hasWhatsapp = contacts.some((c) => c.type === "WHATSAPP");
+  const hasPhone = contacts.some((c) => c.type === "PHONE");
+
+  return (
+    <div className="flex items-center gap-1.5 text-emerald-400" title={`${contacts.length} contact(s) détecté(s)`}>
+      {hasEmail ? <Mail size={14} /> : null}
+      {hasWhatsapp ? <MessageCircle size={14} /> : null}
+      {hasPhone ? <Phone size={14} /> : null}
+    </div>
+  );
 }
 
 export function ScoreBadge({ score }: { score: number }) {
