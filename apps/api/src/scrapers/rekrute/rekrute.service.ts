@@ -11,6 +11,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { classifyItCategory } from '../../offers/classification';
 import { computeMatchScore } from '../../offers/scoring';
+import { extractContacts } from '../../offers/contact-extraction';
 import { SettingsService } from '../../settings/settings.service';
 import type { ScoringWeights } from '../../offers/scoring';
 
@@ -328,5 +329,31 @@ export class RekruteService {
     } else {
       summary.offersUpdated += 1;
     }
+
+    await this.persistContacts(result.id, `${offer.title} ${offer.descriptionRaw}`);
+  }
+
+  /** Docs2/16 "Trouve les contacts publics" — regex-only, IN_POST source. */
+  private async persistContacts(offerId: string, text: string) {
+    const extracted = extractContacts(text);
+    if (extracted.length === 0) return;
+
+    const existing = await this.prisma.offerContact.findMany({
+      where: { offerId },
+      select: { type: true, value: true },
+    });
+    const existingKeys = new Set(existing.map((c) => `${c.type}:${c.value}`));
+
+    const toCreate = extracted.filter((c) => !existingKeys.has(`${c.type}:${c.value}`));
+    if (toCreate.length === 0) return;
+
+    await this.prisma.offerContact.createMany({
+      data: toCreate.map((c) => ({
+        offerId,
+        type: c.type,
+        value: c.value,
+        confidence: c.confidence,
+      })),
+    });
   }
 }
