@@ -6,7 +6,7 @@ import { Play, Loader2, Pencil, Trash2, X, Save } from "lucide-react";
 import type { PlatformSourceDto } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { PlatformBadge } from "@/components/ui/domain-badges";
-import { timeAgo } from "@/lib/format";
+import { timeAgo, nextRunLabel } from "@/lib/format";
 import { runSource, updateSource, deleteSource } from "@/lib/api";
 
 interface RowProps {
@@ -67,6 +67,9 @@ function SourceRow({
             ? `${Math.round(source.frequencyMinutes / 1440)}j`
             : `${source.frequencyMinutes}min`}
         </td>
+        <td className="px-4 py-3 text-slate-400">
+          {source.active ? nextRunLabel(source.lastRunAt, source.frequencyMinutes) : "—"}
+        </td>
         <td className="px-4 py-3 text-slate-400">{source.offerCount ?? 0}</td>
         <td className="px-4 py-3">
           <div className="flex items-center justify-end gap-1.5">
@@ -98,7 +101,7 @@ function SourceRow({
       </tr>
       {isEditing ? (
         <tr className="bg-slate-950/60">
-          <td colSpan={6} className="px-5 py-4">
+          <td colSpan={7} className="px-5 py-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-xs font-medium text-slate-500">
@@ -219,6 +222,7 @@ export function SourcesTable({ sources }: { sources: PlatformSourceDto[] }) {
             <th className="px-4 py-3 font-medium">Statut</th>
             <th className="px-4 py-3 font-medium">Dernière exécution</th>
             <th className="px-4 py-3 font-medium">Fréquence</th>
+            <th className="px-4 py-3 font-medium">Prochain run</th>
             <th className="px-4 py-3 font-medium">Offres</th>
             <th className="px-4 py-3 font-medium text-right">Actions</th>
           </tr>

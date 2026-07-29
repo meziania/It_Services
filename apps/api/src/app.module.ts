@@ -10,6 +10,7 @@ import { MarchesPublicsModule } from './scrapers/marches-publics/marches-publics
 import { SourcesModule } from './sources/sources.module';
 import { AuthModule } from './auth/auth.module';
 import { SettingsModule } from './settings/settings.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { SettingsModule } from './settings/settings.module';
     MarchesPublicsModule,
     SourcesModule,
     SettingsModule,
+    SchedulerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

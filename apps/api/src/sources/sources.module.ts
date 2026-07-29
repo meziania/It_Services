@@ -8,5 +8,6 @@ import { MarchesPublicsModule } from '../scrapers/marches-publics/marches-public
   imports: [RekruteModule, MarchesPublicsModule],
   controllers: [SourcesController],
   providers: [SourcesService],
+  exports: [SourcesService],
 })
 export class SourcesModule {}
