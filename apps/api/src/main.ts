@@ -17,7 +17,7 @@ async function bootstrap() {
     origin: process.env.API_CORS_ORIGIN ?? 'http://localhost:3000',
   });
 
-  const port = process.env.API_PORT ?? 3001;
+  const port = process.env.API_PORT ?? 3011;
   await app.listen(port);
   // eslint-disable-next-line no-console
   console.log(`ServiceIt-scanner API listening on http://localhost:${port}`);

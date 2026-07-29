@@ -11,6 +11,8 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { classifyItCategory } from '../../offers/classification';
 import { computeMatchScore } from '../../offers/scoring';
+import { SettingsService } from '../../settings/settings.service';
+import type { ScoringWeights } from '../../offers/scoring';
 
 const BASE_URL = 'https://www.rekrute.com';
 
@@ -95,7 +97,10 @@ function mapContractType(text: string | undefined): OfferType {
 export class RekruteService {
   private readonly logger = new Logger(RekruteService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settingsService: SettingsService,
+  ) {}
 
   private async ensureSource() {
     return this.prisma.platformSource.upsert({
@@ -192,6 +197,9 @@ export class RekruteService {
 
   async run(keywords: string[] = DEFAULT_KEYWORDS): Promise<RekruteRunSummary> {
     const source = await this.ensureSource();
+    const settings = await this.settingsService.get();
+    const skills = settings.skills;
+    const weights = settings.weights as unknown as ScoringWeights;
     const summary: RekruteRunSummary = {
       keywords,
       fetched: 0,
@@ -212,7 +220,7 @@ export class RekruteService {
 
         const parsedOffers = this.parseListing(html);
         for (const offer of parsedOffers) {
-          await this.persistOffer(source.id, offer, summary);
+          await this.persistOffer(source.id, offer, summary, skills, weights);
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -235,7 +243,13 @@ export class RekruteService {
     return summary;
   }
 
-  private async persistOffer(sourceId: string, offer: ParsedOffer, summary: RekruteRunSummary) {
+  private async persistOffer(
+    sourceId: string,
+    offer: ParsedOffer,
+    summary: RekruteRunSummary,
+    skills: string[],
+    weights: ScoringWeights,
+  ) {
     const urlHash = hashUrl(offer.url);
 
     const existingRawDocument = await this.prisma.rawDocument.findUnique({
@@ -273,6 +287,9 @@ export class RekruteService {
       remote: offer.remote,
       budgetText: undefined, // ReKrute listings don't publish a budget
       publishedAt: offer.publishedAt,
+      location: offer.location,
+      skills,
+      weights,
     });
 
     const result = await this.prisma.jobOffer.upsert({

@@ -16,6 +16,43 @@ datasource db {
 }
 
 // ---------------------------------------------------------------------------
+// Auth (Docs2/12 Sprint 2 — JWT, RBAC, users, roles)
+// ---------------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+/// First registered user bootstraps as ADMIN (see AuthService); further
+/// registration is closed unless an ADMIN invites/creates more users later.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(MEMBER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+/// Single shared row (id="singleton") — Docs2/10 "Settings" admin screen.
+/// Team-wide profile used by the scoring engine (see offers/scoring.ts):
+/// skills list, enabled services, scoring weights, default message template.
+/// Not per-user because the whole point is one shared freelance profile.
+model TeamSettings {
+  id        String   @id @default("singleton")
+  skills    String[] @default([])
+  services  Json // [{ code, label, enabled }]
+  weights   Json // { stack, freelance, freshness, location, budget } (0-100 each)
+  template  Json // { subject, body }
+  updatedAt DateTime @updatedAt
+
+  @@map("team_settings")
+}
+
+// ---------------------------------------------------------------------------
 // Sources
 // ---------------------------------------------------------------------------
 
