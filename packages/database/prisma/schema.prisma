@@ -1,0 +1,232 @@
+// ServiceIt-scanner — Prisma schema
+// Based on Docs2/16-PROJET-PERSONNEL-SCANNER-FREELANCE.md + Docs2/11-MODELE-DONNEES.md
+//
+// Golden rule (Docs2/11): scrapers only ever write to `RawDocument`.
+// Everything else (JobOffer, OfferContact, ...) is produced by the
+// extraction/normalization/classification pipeline, never written
+// directly by a scraper.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Sources
+// ---------------------------------------------------------------------------
+
+enum Platform {
+  JOBMAROC
+  INDEED
+  LINKEDIN
+  FIVERR
+  AMAZON
+  OTHER
+}
+
+enum SourceType {
+  JOB_BOARD
+  FREELANCE_MARKETPLACE
+  SOCIAL
+  OTHER
+}
+
+/// One row per platform we scan (config + schedule).
+/// Docs2/16 -> `platform_sources`
+model PlatformSource {
+  id              String     @id @default(cuid())
+  platform        Platform
+  name            String
+  type            SourceType @default(JOB_BOARD)
+  baseUrl         String?
+  active          Boolean    @default(true)
+  frequencyMinutes Int       @default(1440) // daily by default (Docs2/04)
+  maxPages        Int        @default(5)
+  config          Json?      // adapter-specific config (search keywords, headers, etc.)
+  lastRunAt       DateTime?
+  lastRunStatus   String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  rawDocuments RawDocument[]
+  offers       JobOffer[]
+
+  @@unique([platform, name])
+  @@map("platform_sources")
+}
+
+// ---------------------------------------------------------------------------
+// Raw documents (proof + reprocessing, Docs2/11 rule #4)
+// ---------------------------------------------------------------------------
+
+enum DocumentStatus {
+  PENDING
+  PROCESSED
+  FAILED
+  SKIPPED
+}
+
+/// Untouched payload fetched by a scraper. Never mutated by anything
+/// except the scraper that created it; downstream steps only read it.
+model RawDocument {
+  id           String         @id @default(cuid())
+  sourceId     String
+  source       PlatformSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  url          String
+  urlHash      String         @unique // normalized url hash, for dedup before insert
+  contentType  String         @default("text/html")
+  rawContent   String         @db.Text
+  status       DocumentStatus @default(PENDING)
+  error        String?
+  fetchedAt    DateTime       @default(now())
+  processedAt  DateTime?
+
+  offers JobOffer[]
+
+  @@index([sourceId, status])
+  @@map("raw_documents")
+}
+
+// ---------------------------------------------------------------------------
+// Offers (the core entity of the personal project — Docs2/16)
+// ---------------------------------------------------------------------------
+
+enum OfferType {
+  FREELANCE
+  CONTRACT
+  FULL_TIME
+  BUYER_REQUEST
+}
+
+enum ItCategory {
+  WEB
+  MOBILE
+  FULLSTACK
+  DEVOPS
+  WORDPRESS
+  API_INTEGRATION
+  ECOMMERCE
+  DESIGN
+  DATA
+  OTHER
+  NOT_IT
+}
+
+enum OfferStatus {
+  NEW
+  CONTACTED
+  REPLIED
+  WON
+  LOST
+  SKIP
+}
+
+/// A single scraped opportunity ("job_offers" / "freelance_opportunities" in Docs2/16).
+model JobOffer {
+  id       String   @id @default(cuid())
+  platform Platform
+
+  sourceId String?
+  source   PlatformSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  rawDocumentId String?
+  rawDocument   RawDocument? @relation(fields: [rawDocumentId], references: [id], onDelete: SetNull)
+
+  externalId String // id of the offer on the source platform
+  url        String
+
+  title             String
+  descriptionRaw    String  @db.Text
+  descriptionClean  String? @db.Text
+
+  publishedAt DateTime?
+  deadline    DateTime?
+  budgetText  String?
+  location    String?
+  remote      Boolean?
+
+  offerType  OfferType  @default(FREELANCE)
+  itCategory ItCategory @default(OTHER)
+
+  matchScore   Int      @default(0) // 0-100, see Docs2/16 "Scoring"
+  matchReasons String[] @default([])
+
+  status OfferStatus @default(NEW)
+
+  contacts  OfferContact[]
+  messages  OutreachMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([platform, externalId])
+  @@index([status])
+  @@index([itCategory])
+  @@index([matchScore])
+  @@map("job_offers")
+}
+
+// ---------------------------------------------------------------------------
+// Contacts extracted from an offer
+// ---------------------------------------------------------------------------
+
+enum ContactType {
+  EMAIL
+  PHONE
+  WHATSAPP
+  PLATFORM_MESSAGE
+}
+
+enum ContactSource {
+  IN_POST
+  USER_ADDED
+}
+
+model OfferContact {
+  id         String        @id @default(cuid())
+  offerId    String
+  offer      JobOffer      @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  type       ContactType
+  value      String
+  source     ContactSource @default(IN_POST)
+  confidence Int           @default(50) // 0-100
+  createdAt  DateTime      @default(now())
+
+  @@index([offerId])
+  @@map("offer_contacts")
+}
+
+// ---------------------------------------------------------------------------
+// Outreach (generated proposal + manual send, Docs2/16 "Email vs WhatsApp")
+// ---------------------------------------------------------------------------
+
+enum OutreachChannel {
+  EMAIL
+  WHATSAPP
+}
+
+enum OutreachStatus {
+  DRAFT
+  SENT
+  FAILED
+}
+
+model OutreachMessage {
+  id        String          @id @default(cuid())
+  offerId   String
+  offer     JobOffer        @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  channel   OutreachChannel
+  subject   String?
+  body      String          @db.Text
+  status    OutreachStatus  @default(DRAFT)
+  sentAt    DateTime?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([offerId])
+  @@map("outreach_messages")
+}

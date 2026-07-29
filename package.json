@@ -1,0 +1,24 @@
+{
+  "name": "serviceit-scanner",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Personal freelance IT opportunity scanner (JobMaroc, Indeed, LinkedIn, Fiverr, Amazon) - scrape, score, contact, propose.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build:api": "npm run build --workspace=apps/api",
+    "build:web": "npm run build --workspace=apps/web",
+    "prisma:generate": "npm run generate --workspace=packages/database",
+    "prisma:migrate": "npm run migrate:dev --workspace=packages/database",
+    "prisma:studio": "npm run studio --workspace=packages/database",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

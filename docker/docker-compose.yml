@@ -1,0 +1,68 @@
+name: serviceit-scanner
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sis-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sis
+      POSTGRES_PASSWORD: sis
+      POSTGRES_DB: serviceit_scanner
+      # Windows + Docker Desktop port-forwarding has trouble proxying the
+      # multi-step SCRAM-SHA-256 handshake (default since Postgres 14+);
+      # md5 uses a single-step handshake and avoids spurious P1000 errors
+      # from Prisma when connecting from the host.
+      POSTGRES_HOST_AUTH_METHOD: md5
+      POSTGRES_INITDB_ARGS: "--auth-host=md5"
+    ports:
+      # 5432 is already taken by a native PostgreSQL Windows service on
+      # this machine (and 5433 by another local docker project), so this
+      # container's Postgres is reachable on the host at 5434.
+      - "5434:5432"
+    volumes:
+      - sis_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sis -d serviceit_scanner"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: sis-redis
+    restart: unless-stopped
+    ports:
+      # 6379 is also double-bound by another local process on this
+      # machine; avoid the same silent-routing issue as Postgres.
+      - "6381:6379"
+    volumes:
+      - sis_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: sis-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: sis
+      RABBITMQ_DEFAULT_PASS: sis
+    ports:
+      - "5673:5672"   # AMQP (5672 already used by another local project)
+      - "15673:15672" # Management UI (http://localhost:15673)
+    volumes:
+      - sis_rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+volumes:
+  sis_postgres_data:
+  sis_redis_data:
+  sis_rabbitmq_data:
