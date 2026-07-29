@@ -10,6 +10,8 @@ type Offer = {
   id: string;
   platform: string;
   title: string;
+  companyName?: string | null;
+  location?: string | null;
   itCategory: string;
   matchScore: number;
   status: string;
@@ -89,9 +91,16 @@ export default async function Home() {
                   className="flex items-center justify-between rounded-md border border-slate-800 bg-slate-950 p-3"
                 >
                   <div>
-                    <p className="font-medium">{offer.title}</p>
+                    <p className="font-medium">
+                      <a href={offer.url} target="_blank" rel="noreferrer" className="hover:underline">
+                        {offer.title}
+                      </a>
+                    </p>
                     <p className="text-xs text-slate-400">
-                      {offer.platform} · {offer.itCategory} · {offer.status}
+                      {offer.platform}
+                      {offer.companyName ? ` · ${offer.companyName}` : ""}
+                      {offer.location ? ` · ${offer.location}` : ""} · {offer.itCategory} ·{" "}
+                      {offer.status}
                     </p>
                   </div>
                   <span className="rounded-full bg-slate-800 px-3 py-1 text-sm font-semibold">

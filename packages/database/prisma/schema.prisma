@@ -25,6 +25,10 @@ enum Platform {
   LINKEDIN
   FIVERR
   AMAZON
+  /// Docs2/04 recommends ReKrute as the most important MA job board for a
+  /// dev; "JobMaroc" itself isn't a real scrapeable site (small LinkedIn
+  /// recruiter page), so ReKrute is the first real adapter implemented.
+  REKRUTE
   OTHER
 }
 
@@ -142,6 +146,9 @@ model JobOffer {
   title             String
   descriptionRaw    String  @db.Text
   descriptionClean  String? @db.Text
+
+  companyName String?
+  companyUrl  String?
 
   publishedAt DateTime?
   deadline    DateTime?
