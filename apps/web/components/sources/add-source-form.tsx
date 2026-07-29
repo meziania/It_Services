@@ -7,7 +7,16 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { createSource } from "@/lib/api";
 import type { Platform } from "@/lib/types";
 
-const PLATFORMS: Platform[] = ["REKRUTE", "JOBMAROC", "INDEED", "LINKEDIN", "FIVERR", "AMAZON", "OTHER"];
+const PLATFORMS: Platform[] = [
+  "REKRUTE",
+  "MARCHES_PUBLICS",
+  "JOBMAROC",
+  "INDEED",
+  "LINKEDIN",
+  "FIVERR",
+  "AMAZON",
+  "OTHER",
+];
 
 export function AddSourceForm() {
   const router = useRouter();

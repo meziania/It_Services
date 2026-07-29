@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { Platform } from '@serviceit-scanner/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { RekruteService } from '../scrapers/rekrute/rekrute.service';
+import { MarchesPublicsService } from '../scrapers/marches-publics/marches-publics.service';
 import { CreateSourceDto } from './dto/create-source.dto';
 import { UpdateSourceDto } from './dto/update-source.dto';
 
@@ -16,6 +17,7 @@ export class SourcesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly rekruteService: RekruteService,
+    private readonly marchesPublicsService: MarchesPublicsService,
   ) {}
 
   async findAll() {
@@ -90,6 +92,10 @@ export class SourcesService {
       case Platform.REKRUTE: {
         const keywords = (source.config as { keywords?: string[] } | null)?.keywords;
         return this.rekruteService.run(keywords);
+      }
+      case Platform.MARCHES_PUBLICS: {
+        const keywords = (source.config as { keywords?: string[] } | null)?.keywords;
+        return this.marchesPublicsService.run(keywords);
       }
       default:
         throw new BadRequestException(

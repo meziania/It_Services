@@ -66,6 +66,10 @@ enum Platform {
   /// dev; "JobMaroc" itself isn't a real scrapeable site (small LinkedIn
   /// recruiter page), so ReKrute is the first real adapter implemented.
   REKRUTE
+  /// Docs2/04 "Marchés publics — crucial pour projets IT publics". Portail
+  /// gouvernemental (marchespublics.gov.ma) — 2nd real adapter (Docs2/12
+  /// Sprint 5+6+7 solo-dev shortcut: "2 scrapers: jobs IT + AO").
+  MARCHES_PUBLICS
   OTHER
 }
 

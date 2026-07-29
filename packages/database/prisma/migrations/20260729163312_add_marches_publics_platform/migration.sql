@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "Platform" ADD VALUE 'MARCHES_PUBLICS';

@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 import { OffersModule } from './offers/offers.module';
 import { RekruteModule } from './scrapers/rekrute/rekrute.module';
+import { MarchesPublicsModule } from './scrapers/marches-publics/marches-publics.module';
 import { SourcesModule } from './sources/sources.module';
 import { AuthModule } from './auth/auth.module';
 import { SettingsModule } from './settings/settings.module';
@@ -18,6 +19,7 @@ import { SettingsModule } from './settings/settings.module';
     HealthModule,
     OffersModule,
     RekruteModule,
+    MarchesPublicsModule,
     SourcesModule,
     SettingsModule,
   ],

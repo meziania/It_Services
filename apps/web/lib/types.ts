@@ -30,6 +30,7 @@ export type Platform =
   | "FIVERR"
   | "AMAZON"
   | "REKRUTE"
+  | "MARCHES_PUBLICS"
   | "OTHER";
 
 export interface OfferContact {
