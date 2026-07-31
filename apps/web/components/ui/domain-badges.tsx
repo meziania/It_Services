@@ -23,6 +23,7 @@ const CATEGORY_META: Record<ItCategory, { label: string; color: BadgeColor }> = 
   MOBILE: { label: "Mobile", color: "violet" },
   FULLSTACK: { label: "Fullstack", color: "cyan" },
   DEVOPS: { label: "DevOps", color: "amber" },
+  CYBER: { label: "Cyber", color: "red" },
   WORDPRESS: { label: "WordPress", color: "indigo" },
   API_INTEGRATION: { label: "API", color: "cyan" },
   ECOMMERCE: { label: "E-commerce", color: "pink" },

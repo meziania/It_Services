@@ -12,14 +12,21 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { classifyItCategory } from '../../offers/classification';
 import { computeMatchScore } from '../../offers/scoring';
 import { extractContacts } from '../../offers/contact-extraction';
+import { isFreelanceOpportunity, refineOfferType } from '../../offers/offer-type';
 import { SettingsService } from '../../settings/settings.service';
 import type { ScoringWeights } from '../../offers/scoring';
 
 const BASE_URL = 'https://www.rekrute.com';
 
-// Docs2/14 "Mots-clés job boards" — keep the default run small/polite;
-// pass a custom list to `run()` to widen it.
-const DEFAULT_KEYWORDS = ['développeur', 'informatique', 'digital'];
+// Docs2/14 + user focus: IT broadly, but search for freelance/mission first.
+const DEFAULT_KEYWORDS = [
+  'freelance développeur',
+  'freelance informatique',
+  'mission informatique',
+  'consultant informatique',
+  'cybersécurité',
+  'big data',
+];
 
 // Identifies this as a personal, low-volume research tool rather than
 // pretending to be a browser — see Docs2/15 "Légal" checklist.
@@ -49,6 +56,7 @@ export interface RekruteRunSummary {
   offersUpdated: number;
   skippedDuplicates: number;
   skippedNotIt: number;
+  skippedNotFreelance: number;
   errors: string[];
 }
 
@@ -209,6 +217,7 @@ export class RekruteService {
       offersUpdated: 0,
       skippedDuplicates: 0,
       skippedNotIt: 0,
+      skippedNotFreelance: 0,
       errors: [],
     };
 
@@ -261,7 +270,11 @@ export class RekruteService {
       return;
     }
 
-    const itCategory = classifyItCategory(`${offer.title} ${offer.descriptionRaw}`);
+    const searchText = `${offer.title} ${offer.descriptionRaw}`;
+    const itCategory = classifyItCategory(searchText);
+    const offerType = refineOfferType(offer.offerType, searchText);
+    const keep =
+      itCategory !== ItCategory.NOT_IT && isFreelanceOpportunity(offerType);
 
     const rawDocument = await this.prisma.rawDocument.create({
       data: {
@@ -270,7 +283,7 @@ export class RekruteService {
         urlHash,
         contentType: 'text/html',
         rawContent: offer.rawHtml,
-        status: itCategory === ItCategory.NOT_IT ? DocumentStatus.SKIPPED : DocumentStatus.PROCESSED,
+        status: keep ? DocumentStatus.PROCESSED : DocumentStatus.SKIPPED,
         processedAt: new Date(),
       },
     });
@@ -280,11 +293,16 @@ export class RekruteService {
       summary.skippedNotIt += 1;
       return;
     }
+    if (!isFreelanceOpportunity(offerType)) {
+      // Personal scanner = freelance / mission only (Docs2/16) — CDI/CDD skipped.
+      summary.skippedNotFreelance += 1;
+      return;
+    }
 
     const { score, reasons } = computeMatchScore({
-      text: `${offer.title} ${offer.descriptionRaw}`,
+      text: searchText,
       itCategory,
-      offerType: offer.offerType,
+      offerType,
       remote: offer.remote,
       budgetText: undefined, // ReKrute listings don't publish a budget
       publishedAt: offer.publishedAt,
@@ -301,6 +319,7 @@ export class RekruteService {
         matchScore: score,
         matchReasons: reasons,
         itCategory,
+        offerType,
       },
       create: {
         platform: Platform.REKRUTE,
@@ -316,7 +335,7 @@ export class RekruteService {
         publishedAt: offer.publishedAt,
         deadline: offer.deadline,
         remote: offer.remote,
-        offerType: offer.offerType,
+        offerType,
         itCategory,
         matchScore: score,
         matchReasons: reasons,

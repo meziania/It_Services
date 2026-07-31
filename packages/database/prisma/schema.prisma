@@ -152,6 +152,8 @@ enum ItCategory {
   MOBILE
   FULLSTACK
   DEVOPS
+  /// Cybersécurité / infosec — user focus (IT domain broadly).
+  CYBER
   WORDPRESS
   API_INTEGRATION
   ECOMMERCE

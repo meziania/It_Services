@@ -11,6 +11,7 @@ export type ItCategory =
   | "MOBILE"
   | "FULLSTACK"
   | "DEVOPS"
+  | "CYBER"
   | "WORDPRESS"
   | "API_INTEGRATION"
   | "ECOMMERCE"

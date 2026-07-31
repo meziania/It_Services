@@ -36,11 +36,17 @@ export function OpportunitiesExplorer({ offers }: { offers: Offer[] }) {
   const [remote, setRemote] = useState("ALL");
   const [minScore, setMinScore] = useState(0);
   const [contactOnly, setContactOnly] = useState(false);
+  /** Default on — personal scanner focus = freelance / missions IT, not CDI. */
+  const [freelanceOnly, setFreelanceOnly] = useState(true);
 
   const platforms = useMemo(() => Array.from(new Set(offers.map((o) => o.platform))), [offers]);
-  const categories = useMemo(() => Array.from(new Set(offers.map((o) => o.itCategory))), [offers]);
+  const categories = useMemo(
+    () => Array.from(new Set(offers.map((o) => o.itCategory).filter((c) => c !== "NOT_IT"))),
+    [offers],
+  );
 
   const filtered = offers.filter((o) => {
+    if (o.itCategory === "NOT_IT") return false;
     if (search && !`${o.title} ${o.companyName ?? ""}`.toLowerCase().includes(search.toLowerCase())) return false;
     if (platform !== "ALL" && o.platform !== platform) return false;
     if (category !== "ALL" && o.itCategory !== category) return false;
@@ -49,6 +55,7 @@ export function OpportunitiesExplorer({ offers }: { offers: Offer[] }) {
     if (remote === "ONSITE" && o.remote) return false;
     if (o.matchScore < minScore) return false;
     if (contactOnly && (o.contacts?.length ?? 0) === 0) return false;
+    if (freelanceOnly && o.offerType !== "FREELANCE" && o.offerType !== "BUYER_REQUEST") return false;
     return true;
   });
 
@@ -60,6 +67,7 @@ export function OpportunitiesExplorer({ offers }: { offers: Offer[] }) {
     setRemote("ALL");
     setMinScore(0);
     setContactOnly(false);
+    setFreelanceOnly(true);
   }
 
   return (
@@ -121,6 +129,16 @@ export function OpportunitiesExplorer({ offers }: { offers: Offer[] }) {
             onChange={(e) => setMinScore(Number(e.target.value))}
             className="accent-teal-500"
           />
+        </label>
+
+        <label className="flex items-center gap-1.5 text-xs text-slate-400">
+          <input
+            type="checkbox"
+            checked={freelanceOnly}
+            onChange={(e) => setFreelanceOnly(e.target.checked)}
+            className="h-3.5 w-3.5 accent-teal-500"
+          />
+          Freelance / missions uniquement
         </label>
 
         <label className="flex items-center gap-1.5 text-xs text-slate-400">

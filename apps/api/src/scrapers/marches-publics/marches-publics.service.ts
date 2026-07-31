@@ -17,9 +17,15 @@ import type { ScoringWeights } from '../../offers/scoring';
 
 const BASE_URL = 'https://www.marchespublics.gov.ma';
 
-// Docs2/14 "Mots-clés AO IT": développement, logiciel, application, site web,
-// hébergement, maintenance informatique, cybersécurité, ERP, digitalisation.
-const DEFAULT_KEYWORDS = ['informatique', 'logiciel', 'digitalisation'];
+// Docs2/14 "Mots-clés AO IT" — IT broadly (dev, data, cyber…).
+const DEFAULT_KEYWORDS = [
+  'informatique',
+  'logiciel',
+  'développement',
+  'cybersécurité',
+  'digitalisation',
+  'big data',
+];
 
 /**
  * Docs2/15 "Légal": marchespublics.gov.ma is a public-transparency
