@@ -48,6 +48,8 @@ export interface OutreachMessage {
   body: string;
   status: "DRAFT" | "SENT" | "FAILED";
   sentAt?: string | null;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Offer {

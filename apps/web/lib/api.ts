@@ -3,6 +3,7 @@ import type {
   MessageTemplate,
   Offer,
   OfferStatus,
+  OutreachMessage,
   Platform,
   PlatformSourceDto,
   Role,
@@ -51,6 +52,28 @@ export async function updateOfferStatus(id: string, status: OfferStatus): Promis
     return safeJson<Offer>(res);
   } catch {
     return null;
+  }
+}
+
+/** Docs2/16 — persist outreach draft / mark as sent when user opens mailto/WA. */
+export async function createOutreachMessage(
+  offerId: string,
+  input: {
+    channel: "EMAIL" | "WHATSAPP";
+    subject?: string;
+    body: string;
+    status?: "DRAFT" | "SENT" | "FAILED";
+  },
+): Promise<{ ok: boolean; message?: string; data?: OutreachMessage }> {
+  try {
+    const res = await fetch(`/api/offers/${offerId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    return await mutateResult<OutreachMessage>(res);
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : String(error) };
   }
 }
 

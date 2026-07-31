@@ -12,6 +12,7 @@ import { OfferStatus } from '@serviceit-scanner/database';
 import { OffersService } from './offers.service';
 import { CreateOfferDto } from './dto/create-offer.dto';
 import { UpdateOfferDto } from './dto/update-offer.dto';
+import { CreateOutreachMessageDto } from './dto/create-outreach-message.dto';
 
 @Controller('offers')
 export class OffersController {
@@ -30,6 +31,11 @@ export class OffersController {
   @Post()
   create(@Body() dto: CreateOfferDto) {
     return this.offersService.create(dto);
+  }
+
+  @Post(':id/messages')
+  createMessage(@Param('id') id: string, @Body() dto: CreateOutreachMessageDto) {
+    return this.offersService.createMessage(id, dto);
   }
 
   @Patch(':id')
