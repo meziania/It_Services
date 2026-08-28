@@ -32,6 +32,8 @@ export type Platform =
   | "AMAZON"
   | "REKRUTE"
   | "MARCHES_PUBLICS"
+  | "KHAMSAT"
+  | "MOSTAQL"
   | "OTHER";
 
 export interface OfferContact {

@@ -16,17 +16,19 @@ Question centrale **perso** :
 
 ---
 
-## Sources (celles que tu as mentionnées)
+## Sources (missions freelance — vision actuelle)
 
 | Plateforme | Type de contenu | Intérêt IT | Accès technique (réaliste) |
 | --- | --- | --- | --- |
-| **JobMaroc** | Offres emploi / parfois freelance MA | Fort local | Scraping HTML / RSS si existe — respect CGU |
-| **Indeed** | Offres « developer », « web », contract | Fort | Souvent anti-bot ; API partenaire ou agrégateur payant |
-| **LinkedIn** | Jobs, posts, « hiring » | Très fort | **API officielle** ou outils tiers ; scraping massif = risque ban / légal |
-| **Fiverr** | Buyer Requests, gigs buyers | Direct freelance | Scraping fragile ; préférer alertes / flux autorisés |
-| **Amazon** | À définir | Variable | Préciser : Jobs Amazon, AWS marketplace, autre |
+| **Mostaql** | مشاريع مفتوحة (client → freelance) | Très fort (missions) | Listing public HTML — **adapter implémenté** |
+| **Khamsat** | طلبات الخدمات غير الموجودة | Très fort (demandes) | Listing public ; détail parfois login — **adapter implémenté** |
+| **ReKrute** | Offres / missions MA | Fort local | Adapter implémenté (filtre freelance) |
+| **Marchés publics** | AO IT | Fort (gros tickets) | Adapter + enrichissement détail |
+| **Fiverr** | Buyer Requests | Direct freelance | Scraping fragile / CGU — **plus tard**, méthode autorisée |
+| **LinkedIn** | Jobs, posts « hiring » | Très fort | API / export manuel avant automatisation |
+| **Indeed / JobMaroc** | Offres emploi / contract | Fort | Anti-bot fréquent ; optionnel |
 
-**Recommandation MVP** : commencer par **1–2 sources** les plus simples (ex. **JobMaroc** + un flux **Indeed** limité ou saisie RSS), puis ajouter LinkedIn via **API** ou export manuel avant d’automatiser Fiverr.
+**Cœur produit** : **Mostaql + Khamsat** (besoins clients explicites). Job boards / AO restent des compléments. Fiverr reste hors MVP automatisé.
 
 ---
 

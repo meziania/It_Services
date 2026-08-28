@@ -16,12 +16,11 @@
 
 - **Contexte** : **ton** outil freelance, pas celui de la société.
 - **Objectif** : scanner des **plateformes où des clients publient déjà un besoin IT**, pas seulement « deviner » via la presse marocaine.
-- **Sources visées** (exemples que tu as cités) :
-  - **Fiverr** (buyer requests / projets)
-  - **LinkedIn** (offres, posts « looking for developer »)
-  - **Indeed**
-  - **JobMaroc** (et similaires MA)
-  - **Amazon** (à préciser : Amazon Jobs, Mechanical Turk, ou autre — voir chapitre 16)
+- **Sources cœur missions freelance** (demandes clients) :
+  - **Mostaql** (مشاريع مفتوحة — projets IT arabophones)
+  - **Khamsat** (طلبات الخدمات — buyer requests)
+  - **Fiverr** (buyer requests — plus tard / méthode autorisée)
+  - Compléments : ReKrute (missions), Marchés publics (AO), LinkedIn / Indeed (optionnel)
 - **Résultat UI** :
   - Liste d’**opportunités** (offre / mission IT freelance)
   - **Contact** affiché quand c’est public (email, téléphone, profil, lien messagerie plateforme)

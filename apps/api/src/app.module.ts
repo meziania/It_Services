@@ -7,6 +7,8 @@ import { HealthModule } from './health/health.module';
 import { OffersModule } from './offers/offers.module';
 import { RekruteModule } from './scrapers/rekrute/rekrute.module';
 import { MarchesPublicsModule } from './scrapers/marches-publics/marches-publics.module';
+import { MostaqlModule } from './scrapers/mostaql/mostaql.module';
+import { KhamsatModule } from './scrapers/khamsat/khamsat.module';
 import { SourcesModule } from './sources/sources.module';
 import { AuthModule } from './auth/auth.module';
 import { SettingsModule } from './settings/settings.module';
@@ -21,6 +23,8 @@ import { SchedulerModule } from './scheduler/scheduler.module';
     OffersModule,
     RekruteModule,
     MarchesPublicsModule,
+    MostaqlModule,
+    KhamsatModule,
     SourcesModule,
     SettingsModule,
     SchedulerModule,

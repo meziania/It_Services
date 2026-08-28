@@ -9,7 +9,7 @@ import {
   SourceType,
 } from '@serviceit-scanner/database';
 import { PrismaService } from '../../prisma/prisma.service';
-import { classifyItCategory } from '../../offers/classification';
+import { classifyItCategory, isCoreItMission } from '../../offers/classification';
 import { computeMatchScore } from '../../offers/scoring';
 import { extractContacts } from '../../offers/contact-extraction';
 import { isFreelanceOpportunity, refineOfferType } from '../../offers/offer-type';
@@ -273,8 +273,8 @@ export class RekruteService {
     const searchText = `${offer.title} ${offer.descriptionRaw}`;
     const itCategory = classifyItCategory(searchText);
     const offerType = refineOfferType(offer.offerType, searchText);
-    const keep =
-      itCategory !== ItCategory.NOT_IT && isFreelanceOpportunity(offerType);
+    // User scope: freelance missions only + IT (dev / sécu / data / ERP / CRM).
+    const keep = isCoreItMission(searchText) && isFreelanceOpportunity(offerType);
 
     const rawDocument = await this.prisma.rawDocument.create({
       data: {
@@ -289,7 +289,7 @@ export class RekruteService {
     });
     summary.newRawDocuments += 1;
 
-    if (itCategory === ItCategory.NOT_IT) {
+    if (!isCoreItMission(searchText) || itCategory === ItCategory.NOT_IT) {
       summary.skippedNotIt += 1;
       return;
     }

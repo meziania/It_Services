@@ -3,14 +3,16 @@ import { Platform } from '@serviceit-scanner/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { RekruteService } from '../scrapers/rekrute/rekrute.service';
 import { MarchesPublicsService } from '../scrapers/marches-publics/marches-publics.service';
+import { MostaqlService } from '../scrapers/mostaql/mostaql.service';
+import { KhamsatService } from '../scrapers/khamsat/khamsat.service';
 import { CreateSourceDto } from './dto/create-source.dto';
 import { UpdateSourceDto } from './dto/update-source.dto';
 
 /**
  * Docs2/10-DASHBOARD-ET-ADMIN.md "Gestion sources" (CRUD, enable/disable, run
- * now) — minimal admin surface for the personal scanner: list configured
- * platform_sources + trigger a manual run for the platforms that already
- * have an implemented adapter (only ReKrute for now, see 16-...).
+ * now) — list configured platform_sources + trigger a manual run for
+ * platforms with an implemented adapter (ReKrute, Marchés Publics, Mostaql,
+ * Khamsat).
  */
 @Injectable()
 export class SourcesService {
@@ -18,6 +20,8 @@ export class SourcesService {
     private readonly prisma: PrismaService,
     private readonly rekruteService: RekruteService,
     private readonly marchesPublicsService: MarchesPublicsService,
+    private readonly mostaqlService: MostaqlService,
+    private readonly khamsatService: KhamsatService,
   ) {}
 
   async findAll() {
@@ -97,6 +101,12 @@ export class SourcesService {
         const keywords = (source.config as { keywords?: string[] } | null)?.keywords;
         return this.marchesPublicsService.run(keywords);
       }
+      case Platform.MOSTAQL: {
+        const listingPaths = (source.config as { listingPaths?: string[] } | null)?.listingPaths;
+        return this.mostaqlService.run(listingPaths);
+      }
+      case Platform.KHAMSAT:
+        return this.khamsatService.run();
       default:
         throw new BadRequestException(
           `No scraper adapter implemented yet for platform ${source.platform} (Docs2/16 roadmap).`,

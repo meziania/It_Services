@@ -5,6 +5,8 @@ import type { ItCategory, OfferContact, OfferStatus, OfferType, Platform } from 
 const PLATFORM_META: Record<Platform, { label: string; color: BadgeColor }> = {
   REKRUTE: { label: "ReKrute", color: "blue" },
   MARCHES_PUBLICS: { label: "Marchés Publics", color: "teal" },
+  KHAMSAT: { label: "Khamsat", color: "emerald" },
+  MOSTAQL: { label: "Mostaql", color: "cyan" },
   JOBMAROC: { label: "JobMaroc", color: "cyan" },
   INDEED: { label: "Indeed", color: "indigo" },
   LINKEDIN: { label: "LinkedIn", color: "violet" },

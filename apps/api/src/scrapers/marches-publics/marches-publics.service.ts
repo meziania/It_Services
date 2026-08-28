@@ -4,6 +4,7 @@ import * as cheerio from 'cheerio';
 import {
   DocumentStatus,
   ItCategory,
+  OfferStatus,
   OfferType,
   Platform,
   SourceType,
@@ -51,6 +52,24 @@ interface ParsedConsultation {
   deadline?: Date;
   url: string;
   rawHtml: string;
+}
+
+/**
+ * Fields scraped from the public detail page (Docs2/05 "Marchés publics").
+ * Full DCE ZIP/PDF requires a Prado form (anonymous + CGU) — deferred;
+ * the detail page already exposes budget, domaines, buyer email, DCE link.
+ */
+interface DetailEnrichment {
+  objet?: string;
+  buyer?: string;
+  location?: string;
+  category?: string;
+  procedureType?: string;
+  budgetText?: string;
+  domaines?: string;
+  contactEmail?: string;
+  dceUrl?: string;
+  detailHtml: string;
 }
 
 function sleep(ms: number) {
@@ -113,6 +132,10 @@ export class MarchesPublicsService {
     return `${BASE_URL}/index.php?page=entreprise.EntrepriseDetailConsultation&refConsultation=${refConsultation}&orgAcronyme=${orgAcronyme}`;
   }
 
+  private buildDceRequestUrl(refConsultation: string, orgAcronyme: string): string {
+    return `${BASE_URL}/index.php?page=entreprise.EntrepriseDemandeTelechargementDce&refConsultation=${refConsultation}&orgAcronyme=${orgAcronyme}`;
+  }
+
   private async fetchHtml(url: string): Promise<string> {
     const res = await fetch(url, {
       headers: {
@@ -125,6 +148,60 @@ export class MarchesPublicsService {
       throw new Error(`HTTP ${res.status} fetching ${url}`);
     }
     return res.text();
+  }
+
+  private parseDetailPage(html: string, refConsultation: string, orgAcronyme: string): DetailEnrichment {
+    const $ = cheerio.load(html);
+    const text = (sel: string) => $(sel).first().text().replace(/\s+/g, ' ').trim() || undefined;
+
+    // Domaines are often several sibling labels inside the span — join with " · "
+    // so categories don't glue together ("…autresFournitures…").
+    const domainesEl = $(
+      '#ctl0_CONTENU_PAGE_idEntrepriseConsultationSummary_domainesActivite, span[id$="_domainesActivite"]',
+    ).first();
+    const domaineParts = domainesEl
+      .children()
+      .map((_, el) => $(el).text().replace(/\s+/g, ' ').trim())
+      .get()
+      .filter(Boolean);
+    const domaines =
+      domaineParts.length > 0
+        ? [...new Set(domaineParts)].join(' · ')
+        : domainesEl.text().replace(/\s+/g, ' ').trim();
+
+    const dceHref = $('a[id$="_linkDownloadDce"]').first().attr('href');
+    const dceUrl = dceHref
+      ? new URL(dceHref, BASE_URL).toString()
+      : this.buildDceRequestUrl(refConsultation, orgAcronyme);
+
+    return {
+      objet: text('#ctl0_CONTENU_PAGE_idEntrepriseConsultationSummary_objet'),
+      buyer: text('#ctl0_CONTENU_PAGE_idEntrepriseConsultationSummary_entiteAchat'),
+      location: text('#ctl0_CONTENU_PAGE_idEntrepriseConsultationSummary_lieuxExecutions'),
+      category: text('#ctl0_CONTENU_PAGE_idEntrepriseConsultationSummary_categoriePrincipale'),
+      procedureType: text('#ctl0_CONTENU_PAGE_idEntrepriseConsultationSummary_typeProcedure'),
+      budgetText: text(
+        '#ctl0_CONTENU_PAGE_idEntrepriseConsultationSummary_idReferentielZoneText_RepeaterReferentielZoneText_ctl0_labelReferentielZoneText',
+      ),
+      domaines: domaines || undefined,
+      contactEmail: text('#ctl0_CONTENU_PAGE_idEntrepriseConsultationSummary_email, span[id$="_email"]'),
+      dceUrl,
+      detailHtml: html,
+    };
+  }
+
+  private async fetchDetail(
+    refConsultation: string,
+    orgAcronyme: string,
+  ): Promise<DetailEnrichment | null> {
+    try {
+      const html = await this.fetchHtml(this.buildDetailUrl(refConsultation, orgAcronyme));
+      return this.parseDetailPage(html, refConsultation, orgAcronyme);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Detail fetch failed for ${orgAcronyme}/${refConsultation}: ${message}`);
+      return null;
+    }
   }
 
   private parseListing(html: string): ParsedConsultation[] {
@@ -243,6 +320,9 @@ export class MarchesPublicsService {
       await sleep(2000);
     }
 
+    // Backfill detail enrichment for AO already in DB (listing-only rows).
+    await this.enrichExistingOffers(skills, weights);
+
     await this.prisma.platformSource.update({
       where: { id: source.id },
       data: {
@@ -252,6 +332,111 @@ export class MarchesPublicsService {
     });
 
     return summary;
+  }
+
+  /**
+   * Docs2/05 — enrich open AO that still lack descriptionClean (detail page).
+   * Caps at 10 per run to stay polite with the government portal.
+   */
+  private parseExternalIds(offer: { externalId: string; url: string }): {
+    orgAcronyme: string;
+    refConsultation: string;
+  } | null {
+    try {
+      const u = new URL(offer.url);
+      const refConsultation = u.searchParams.get('refConsultation');
+      const orgAcronyme = u.searchParams.get('orgAcronyme');
+      if (refConsultation && orgAcronyme) return { orgAcronyme, refConsultation };
+    } catch {
+      // fall through to externalId parse
+    }
+    const match = offer.externalId.match(/^([^-]+)-(.+)$/);
+    if (!match) return null;
+    return { orgAcronyme: match[1], refConsultation: match[2] };
+  }
+
+  private async enrichExistingOffers(skills: string[], weights: ScoringWeights) {
+    const pending = await this.prisma.jobOffer.findMany({
+      where: {
+        platform: Platform.MARCHES_PUBLICS,
+        descriptionClean: null,
+        status: { not: OfferStatus.SKIP },
+      },
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (pending.length === 0) return;
+    this.logger.log(`Enriching detail pages for ${pending.length} existing AO…`);
+
+    for (const offer of pending) {
+      const ids = this.parseExternalIds(offer);
+      if (!ids) continue;
+      const detail = await this.fetchDetail(ids.refConsultation, ids.orgAcronyme);
+      if (!detail) continue;
+      await this.applyDetailToOffer(offer.id, offer.title, detail, skills, weights);
+      await sleep(1500);
+    }
+  }
+
+  private async applyDetailToOffer(
+    offerId: string,
+    title: string,
+    detail: DetailEnrichment,
+    skills: string[],
+    weights: ScoringWeights,
+  ) {
+    const searchText = [
+      detail.objet,
+      detail.category,
+      detail.domaines,
+      detail.procedureType,
+      title,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    const itCategory = classifyItCategory(searchText);
+    const { score, reasons } = computeMatchScore({
+      text: searchText,
+      itCategory,
+      offerType: OfferType.BUYER_REQUEST,
+      remote: undefined,
+      budgetText: detail.budgetText,
+      publishedAt: undefined,
+      location: detail.location,
+      skills,
+      weights,
+    });
+
+    const descriptionClean = [
+      detail.objet,
+      detail.procedureType ? `Type de procédure : ${detail.procedureType}` : null,
+      detail.category ? `Catégorie : ${detail.category}` : null,
+      detail.domaines ? `Domaines d'activité : ${detail.domaines}` : null,
+      detail.budgetText ? `Estimation : ${detail.budgetText} Dhs TTC` : null,
+      detail.dceUrl ? `Dossier de consultation (DCE) : ${detail.dceUrl}` : null,
+      'Note : le téléchargement du ZIP/PDF DCE nécessite le formulaire anonyme du portail.',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    await this.prisma.jobOffer.update({
+      where: { id: offerId },
+      data: {
+        descriptionClean,
+        descriptionRaw: detail.objet ?? undefined,
+        companyName: detail.buyer,
+        location: detail.location,
+        budgetText: detail.budgetText,
+        itCategory,
+        matchScore: score,
+        matchReasons: reasons,
+      },
+    });
+
+    const contactHaystack = [detail.contactEmail, detail.objet, detail.buyer].filter(Boolean).join(' ');
+    await this.persistContacts(offerId, contactHaystack);
   }
 
   private async persistConsultation(
@@ -281,7 +466,14 @@ export class MarchesPublicsService {
       return;
     }
 
-    const searchText = `${consultation.objet} ${consultation.category ?? ''}`;
+    // Detail page has budget / domaines / buyer email (Docs2/05 extract).
+    const detail = await this.fetchDetail(consultation.refConsultation, consultation.orgAcronyme);
+    await sleep(1500);
+
+    const objet = detail?.objet ?? consultation.objet;
+    const category = detail?.category ?? consultation.category;
+    const domaines = detail?.domaines;
+    const searchText = `${objet} ${category ?? ''} ${domaines ?? ''}`;
     const itCategory = classifyItCategory(searchText);
 
     const rawDocument = await this.prisma.rawDocument.create({
@@ -290,7 +482,7 @@ export class MarchesPublicsService {
         url: consultation.url,
         urlHash,
         contentType: 'text/html',
-        rawContent: consultation.rawHtml,
+        rawContent: detail?.detailHtml ?? consultation.rawHtml,
         status: itCategory === ItCategory.NOT_IT ? DocumentStatus.SKIPPED : DocumentStatus.PROCESSED,
         processedAt: new Date(),
       },
@@ -302,6 +494,7 @@ export class MarchesPublicsService {
       return;
     }
 
+    const budgetText = detail?.budgetText;
     const { score, reasons } = computeMatchScore({
       text: searchText,
       itCategory,
@@ -309,14 +502,27 @@ export class MarchesPublicsService {
       // closest existing OfferType is BUYER_REQUEST (Docs2/16 categories).
       offerType: OfferType.BUYER_REQUEST,
       remote: undefined,
-      budgetText: undefined, // not published on the listing page
+      budgetText,
       publishedAt: consultation.publishedAt,
-      location: consultation.location,
+      location: detail?.location ?? consultation.location,
       skills,
       weights,
     });
 
     const externalId = `${consultation.orgAcronyme}-${consultation.refConsultation}`;
+    const descriptionClean = [
+      objet,
+      (detail?.procedureType ?? consultation.procedureType)
+        ? `Type de procédure : ${detail?.procedureType ?? consultation.procedureType}`
+        : null,
+      category ? `Catégorie : ${category}` : null,
+      domaines ? `Domaines d'activité : ${domaines}` : null,
+      budgetText ? `Estimation : ${budgetText} Dhs TTC` : null,
+      detail?.dceUrl ? `Dossier de consultation (DCE) : ${detail.dceUrl}` : null,
+      'Note : le téléchargement du ZIP/PDF DCE nécessite le formulaire anonyme du portail.',
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     const result = await this.prisma.jobOffer.upsert({
       where: {
@@ -326,6 +532,10 @@ export class MarchesPublicsService {
         matchScore: score,
         matchReasons: reasons,
         itCategory,
+        descriptionClean,
+        budgetText,
+        companyName: detail?.buyer ?? consultation.buyer,
+        location: detail?.location ?? consultation.location,
       },
       create: {
         platform: Platform.MARCHES_PUBLICS,
@@ -333,18 +543,14 @@ export class MarchesPublicsService {
         rawDocumentId: rawDocument.id,
         externalId,
         url: consultation.url,
-        title: `${consultation.reference} — ${consultation.objet}`.slice(0, 250),
-        descriptionRaw: [
-          consultation.objet,
-          consultation.procedureType ? `Type de procédure : ${consultation.procedureType}` : null,
-          consultation.category ? `Catégorie : ${consultation.category}` : null,
-        ]
-          .filter(Boolean)
-          .join('\n'),
-        companyName: consultation.buyer,
-        location: consultation.location,
+        title: `${consultation.reference} — ${objet}`.slice(0, 250),
+        descriptionRaw: objet,
+        descriptionClean,
+        companyName: detail?.buyer ?? consultation.buyer,
+        location: detail?.location ?? consultation.location,
         publishedAt: consultation.publishedAt,
         deadline: consultation.deadline,
+        budgetText,
         offerType: OfferType.BUYER_REQUEST,
         itCategory,
         matchScore: score,
@@ -358,7 +564,14 @@ export class MarchesPublicsService {
       summary.offersUpdated += 1;
     }
 
-    await this.persistContacts(result.id, `${consultation.objet} ${consultation.buyer ?? ''}`);
+    const contactHaystack = [
+      detail?.contactEmail,
+      objet,
+      detail?.buyer ?? consultation.buyer,
+    ]
+      .filter(Boolean)
+      .join(' ');
+    await this.persistContacts(result.id, contactHaystack);
   }
 
   /** Docs2/16 "Trouve les contacts publics" — regex-only, IN_POST source. */
