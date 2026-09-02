@@ -75,13 +75,6 @@ export default function LoginPage() {
             {pending ? <Loader2 size={15} className="animate-spin" /> : null}
             Se connecter
           </button>
-
-          <p className="text-center text-xs text-slate-500">
-            Pas encore de compte ?{" "}
-            <a href="/register" className="font-medium text-teal-400 hover:text-teal-300 hover:underline">
-              S&apos;inscrire
-            </a>
-          </p>
         </form>
       </div>
     </div>

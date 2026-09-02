@@ -1,0 +1,32 @@
+# Fly.io — API NestJS (Docker)
+# https://fly.io/docs/reference/configuration/
+app = "serviceit-scanner-api"
+primary_region = "cdg"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3011"
+  API_CORS_ORIGIN = "https://serviceit-scanner.vercel.app"
+
+[http_service]
+  internal_port = 3011
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "60s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
