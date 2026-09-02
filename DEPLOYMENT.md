@@ -1,5 +1,15 @@
 # Hébergement de ServiceIt-scanner
 
+## Déploiement en cours
+
+| Composant | Statut | URL |
+| --- | --- | --- |
+| Web Next.js | **Déployé** | https://serviceit-scanner.vercel.app |
+| API NestJS | **À faire sur Railway** | — |
+| PostgreSQL | **À faire sur Railway** | — |
+
+---
+
 ## Architecture retenue
 
 | Composant | Hébergeur | Pourquoi |
@@ -30,7 +40,7 @@ jamais.
    | --- | --- |
    | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (référence Railway) |
    | `JWT_SECRET` | une valeur aléatoire longue (voir plus bas) |
-   | `API_CORS_ORIGIN` | l'URL Vercel, ex. `https://serviceit-scanner.vercel.app` |
+   | `API_CORS_ORIGIN` | `https://serviceit-scanner.vercel.app` |
    | `NODE_ENV` | `production` |
 
    `PORT` est injecté automatiquement par Railway, ne pas le définir.
