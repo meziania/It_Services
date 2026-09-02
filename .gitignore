@@ -38,3 +38,6 @@ coverage/
 
 # docker
 docker/volumes/
+
+# vercel local link metadata
+.vercel/

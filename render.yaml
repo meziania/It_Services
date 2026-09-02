@@ -1,0 +1,23 @@
+# Render Blueprint — API NestJS (Docker)
+# https://render.com/docs/blueprint-spec
+#
+# Free tier spins down after inactivity; fine for testing, not ideal for scrapers.
+# For 24/7 scraping use Railway, Fly.io, or Oracle Cloud Always Free.
+services:
+  - type: web
+    name: serviceit-scanner-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: API_CORS_ORIGIN
+        value: https://serviceit-scanner.vercel.app
