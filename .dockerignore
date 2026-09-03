@@ -7,7 +7,10 @@ dist
 .git
 .env
 .env.local
+.env.production
 *.log
 coverage
 Doc
 Docs2
+.vercel
+fly.toml

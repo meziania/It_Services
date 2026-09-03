@@ -6,10 +6,12 @@
 | --- | --- | --- |
 | Web Next.js (`apps/web`) | **Vercel** | Gratuit |
 | PostgreSQL | **Neon** | Gratuit (0,5 GB) |
-| API NestJS (`apps/api`) | **Fly.io** | Gratuit (limité, always-on possible) |
+| API NestJS (`apps/api`) | **Oracle Cloud Always Free** | Gratuit (VM Docker) |
 
 L'API **ne peut pas** tourner sur Vercel : scrapers + cron ont besoin d'un
 processus long-running.
+
+Guide détaillé Oracle : [`docs/ORACLE-CLOUD.md`](docs/ORACLE-CLOUD.md).
 
 ---
 
