@@ -15,6 +15,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ServiceIt-scanner",
   description: "Freelance IT opportunity scanner dashboard",
+  applicationName: "ServiceIt-scanner",
+  icons: {
+    icon: [
+      { url: "/favicon.png?v=3", type: "image/png", sizes: "32x32" },
+      { url: "/icon.png?v=3", type: "image/png", sizes: "48x48" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png?v=3", type: "image/png", sizes: "180x180" }],
+  },
 };
 
 export default function RootLayout({

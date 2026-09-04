@@ -15,6 +15,7 @@ import { computeMatchScore } from '../../offers/scoring';
 import { extractContacts } from '../../offers/contact-extraction';
 import { SettingsService } from '../../settings/settings.service';
 import type { ScoringWeights } from '../../offers/scoring';
+import { notifyHighScoreOffer } from '../../alerts/high-score-alert';
 
 const BASE_URL = 'https://www.marchespublics.gov.ma';
 
@@ -560,6 +561,13 @@ export class MarchesPublicsService {
 
     if (result.createdAt.getTime() === result.updatedAt.getTime()) {
       summary.offersCreated += 1;
+      await notifyHighScoreOffer({
+        id: result.id,
+        title: result.title,
+        matchScore: result.matchScore,
+        url: result.url,
+        platform: Platform.MARCHES_PUBLICS,
+      });
     } else {
       summary.offersUpdated += 1;
     }

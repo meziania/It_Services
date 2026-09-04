@@ -16,7 +16,11 @@ import { SchedulerModule } from './scheduler/scheduler.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      // Monorepo: Nest runs from apps/api, shared secrets live at repo root.
+      envFilePath: ['.env', '../../.env'],
+    }),
     PrismaModule,
     AuthModule,
     HealthModule,

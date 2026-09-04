@@ -19,8 +19,18 @@ export class OffersController {
   constructor(private readonly offersService: OffersService) {}
 
   @Get()
-  findAll(@Query('status') status?: OfferStatus) {
-    return this.offersService.findAll(status);
+  findAll(
+    @Query('status') status?: OfferStatus,
+    @Query('minScore') minScoreRaw?: string,
+  ) {
+    const minScore =
+      minScoreRaw !== undefined && minScoreRaw !== ''
+        ? Number(minScoreRaw)
+        : undefined;
+    return this.offersService.findAll(
+      status,
+      Number.isFinite(minScore) ? minScore : undefined,
+    );
   }
 
   @Get(':id')

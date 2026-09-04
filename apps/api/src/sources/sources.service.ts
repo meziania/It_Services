@@ -107,6 +107,12 @@ export class SourcesService {
       }
       case Platform.KHAMSAT:
         return this.khamsatService.run();
+      case Platform.FIVERR:
+      case Platform.LINKEDIN:
+      case Platform.JOBMAROC:
+        throw new BadRequestException(
+          `Pas de scraper pour ${source.platform} — désactivez cette source ou attendez un adaptateur.`,
+        );
       default:
         throw new BadRequestException(
           `No scraper adapter implemented yet for platform ${source.platform} (Docs2/16 roadmap).`,

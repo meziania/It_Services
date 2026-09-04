@@ -24,10 +24,9 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all paths except:
-     * - _next/static, _next/image (Next internals)
-     * - favicon.ico, api routes (proxy handlers manage their own auth)
+     * Match all paths except Next internals, API proxies, and favicons
+     * (otherwise unauthenticated tab-icon requests get HTML login pages).
      */
-    "/((?!_next/static|_next/image|favicon.ico|api/).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|favicon\\.png|icon\\.png|apple-touch-icon\\.png|apple-icon|api/).*)",
   ],
 };

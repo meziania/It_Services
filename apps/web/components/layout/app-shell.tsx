@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { ShieldCheck, User as UserIcon } from "lucide-react";
 import { Sidebar } from "./sidebar";
 import { HealthPill } from "./health-pill";
+import { HighScoreAlertsBell } from "./high-score-alerts-bell";
 import { getCurrentUser } from "@/lib/api-server";
 
 export async function AppShell({
@@ -28,6 +29,7 @@ export async function AppShell({
           </div>
           <div className="flex items-center gap-3">
             {actions}
+            <HighScoreAlertsBell />
             {currentUser ? (
               <span className="flex items-center gap-1.5 rounded-full border border-slate-800 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300">
                 {currentUser.role === "ADMIN" ? (

@@ -6,12 +6,24 @@
 | --- | --- | --- |
 | Web Next.js (`apps/web`) | **Vercel** | Gratuit |
 | PostgreSQL | **Neon** | Gratuit (0,5 GB) |
-| API NestJS (`apps/api`) | **Oracle Cloud Always Free** | Gratuit (VM Docker) |
+| API NestJS (`apps/api`) | **Render** (Docker) | Gratuit (s'endort) |
 
 L'API **ne peut pas** tourner sur Vercel : scrapers + cron ont besoin d'un
 processus long-running.
 
-Guide détaillé Oracle : [`docs/ORACLE-CLOUD.md`](docs/ORACLE-CLOUD.md).
+### Anti-sleep Render
+
+Le plan gratuit Render s'endort après ~15 min. Deux filets :
+
+1. **GitHub Action** `.github/workflows/render-keep-alive.yml` — ping `/health` toutes les 10 min
+2. **Vercel Cron** `/api/cron/keep-alive` — une fois par jour (Hobby)
+
+### Alertes score élevé
+
+Quand une nouvelle offre score ≥ `HIGH_SCORE_THRESHOLD` (défaut 70) :
+
+- log API + cloche **Alertes** dans le dashboard
+- optionnel : `ALERT_WEBHOOK_URL` (Discord/Slack/n8n)
 
 ---
 

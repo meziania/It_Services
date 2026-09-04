@@ -15,6 +15,7 @@ import { extractContacts } from '../../offers/contact-extraction';
 import { isFreelanceOpportunity, refineOfferType } from '../../offers/offer-type';
 import { SettingsService } from '../../settings/settings.service';
 import type { ScoringWeights } from '../../offers/scoring';
+import { notifyHighScoreOffer } from '../../alerts/high-score-alert';
 
 const BASE_URL = 'https://www.rekrute.com';
 
@@ -128,7 +129,8 @@ export class RekruteService {
   }
 
   private buildSearchUrl(keyword: string): string {
-    return `${BASE_URL}/offres.html?s=1&motcle=${encodeURIComponent(keyword)}`;
+    // ReKrute's live search uses `keyword` (not the legacy `motcle` param).
+    return `${BASE_URL}/offres.html?s=1&keyword=${encodeURIComponent(keyword)}`;
   }
 
   private async fetchHtml(url: string): Promise<string> {
@@ -345,6 +347,13 @@ export class RekruteService {
     // Prisma's upsert doesn't tell us which branch ran; infer from createdAt === updatedAt.
     if (result.createdAt.getTime() === result.updatedAt.getTime()) {
       summary.offersCreated += 1;
+      await notifyHighScoreOffer({
+        id: result.id,
+        title: result.title,
+        matchScore: result.matchScore,
+        url: result.url,
+        platform: Platform.REKRUTE,
+      });
     } else {
       summary.offersUpdated += 1;
     }

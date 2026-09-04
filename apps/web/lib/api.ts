@@ -30,7 +30,8 @@ async function safeJson<T>(res: Response): Promise<T | null> {
  */
 export async function getHealth(): Promise<HealthResponse | null> {
   try {
-    const res = await fetch(`${API_URL}/health`, { cache: "no-store" });
+    // Same-origin proxy (app/api/health) — no CORS dependency on the Nest API URL.
+    const res = await fetch(`/api/health`, { cache: "no-store" });
     return safeJson<HealthResponse>(res);
   } catch {
     return null;

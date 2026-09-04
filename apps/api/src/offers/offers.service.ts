@@ -9,9 +9,12 @@ import { CreateOutreachMessageDto } from './dto/create-outreach-message.dto';
 export class OffersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(status?: OfferStatus) {
+  findAll(status?: OfferStatus, minScore?: number) {
     return this.prisma.jobOffer.findMany({
-      where: status ? { status } : undefined,
+      where: {
+        ...(status ? { status } : {}),
+        ...(minScore !== undefined ? { matchScore: { gte: minScore } } : {}),
+      },
       include: {
         contacts: true,
         messages: { orderBy: { createdAt: 'desc' } },
